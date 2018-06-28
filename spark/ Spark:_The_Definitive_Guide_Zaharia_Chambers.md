@@ -2006,21 +2006,39 @@ Each line in the file becomes a record in the DataFrame. It is then up to you to
 #### Reading Text Files
 
 ```scala
-
+spark.read.textFile("/data/flight-data/csv/2010-summary.csv")
+  .selectExpr("split(value, ',') as rows").show()
 ```
+#### Writing Text Files
 
 ```scala
+csvFile.select("DEST_COUNTRY_NAME").write.text("/tmp/simple-text-file.txt")
 
+csvFile.limit(10).select("DEST_COUNTRY_NAME", "count")
+  .write.partitionBy("count").text("/tmp/five-csv-files2.csv")
 ```
+### Partitioning
+Writing by column, each file represent a column of the dataframe
 
 ```scala
-
+csvFile.limit(10).write.mode("overwrite").partitionBy("DEST_COUNTRY_NAME")
+  .save("/tmp/partitioned-files.parquet")
 ```
-
+### Bucketing
+The data is prepartitioned according to how you expect to use that data later on, meaning you can avoid expensive shuffles when joining or aggregating.
 ```scala
+val numberBuckets = 10
+val columnToBucketBy = "count"
 
+csvFile.write.format("parquet").mode("overwrite")
+  .bucketBy(numberBuckets, columnToBucketBy).saveAsTable("bucketedFiles")
 ```
+### Complex Types
+Only in ORC and Parquet
 
+
+### Managing File Size
+You can use the maxRecordsPerFile option and specify a number of your choosing.
 ```scala
 
 ```
