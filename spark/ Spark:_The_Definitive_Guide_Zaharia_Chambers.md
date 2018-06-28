@@ -1945,7 +1945,7 @@ val dbDataFrame = spark.read.format("jdbc").option("url", url)
   .option("dbtable", tablename).option("driver",  driver).load()
 ```
 Read in SQL with password and user
- ```scala
+```scala
 val pgDF = spark.read
   .format("jdbc")
   .option("driver", "org.postgresql.Driver")
@@ -1953,3 +1953,395 @@ val pgDF = spark.read
   .option("dbtable", "schema.tablename")
   .option("user", "username").option("password","my-secret-password").load()
 ```
+##### Query Pushdown
+
+First, Spark makes a best-effort attempt to filter data in the database itself before creating the DataFrame
+
+##### Query SQL directly to Database
+Rather than specifying a table name, you just specify a SQL query in parenthesis
+```scala
+val pushdownQuery = """(SELECT DISTINCT(DEST_COUNTRY_NAME) FROM flight_info)
+  AS flight_info"""
+val dbDataFrame = spark.read.format("jdbc")
+  .option("url", url).option("dbtable", pushdownQuery).option("driver",  driver)
+  .load()
+```
+##### Reading from databases in parallel
+```scala
+val dbDataFrame = spark.read.format("jdbc")
+  .option("url", url).option("dbtable", tablename).option("driver", driver)
+  .option("numPartitions", 10).load()
+```
+
+Using jdbc directly
+```scala
+val props = new java.util.Properties
+props.setProperty("driver", "org.sqlite.JDBC")
+val predicates = Array(
+  "DEST_COUNTRY_NAME = 'Sweden' OR ORIGIN_COUNTRY_NAME = 'Sweden'",
+  "DEST_COUNTRY_NAME = 'Anguilla' OR ORIGIN_COUNTRY_NAME = 'Anguilla'")
+spark.read.jdbc(url, tablename, predicates, props).show()
+spark.read.jdbc(url, tablename, predicates, props).rdd.getNumPartitions // 2
+```
+##### Partitioning based on a sliding window
+```scala
+val colName = "count"
+val lowerBound = 0L
+val upperBound = 348113L // this is the max count in our database
+val numPartitions = 10
+
+spark.read.jdbc(url,tablename,colName,lowerBound,upperBound,numPartitions,props)
+  .count()
+```
+#### Writing to SQL Databases
+```scala
+val newPath = "jdbc:sqlite://tmp/my-sqlite.db"
+csvFile.write.mode("overwrite").jdbc(newPath, tablename, props)
+
+csvFile.write.mode("append").jdbc(newPath, tablename, props)
+```
+### Text Files
+Each line in the file becomes a record in the DataFrame. It is then up to you to transform it accordingly.
+
+#### Reading Text Files
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
+```scala
+
+```
+
