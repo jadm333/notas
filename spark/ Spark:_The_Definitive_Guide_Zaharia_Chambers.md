@@ -2,7 +2,7 @@
 ###### Matei Zaharia, Bill Chambers
 
 
-### Chp 1
+## Chp 1
 Launching python REPL.
 ```bash
 ./bin/pyspark
@@ -16,7 +16,7 @@ Launching Saprk SQL REPL.
 ./bin/spark-sql
 ```
 
-### Chp 3
+## Chp 3
 
 ```scala
 // Se crea un data frame distribuido
@@ -1749,3 +1749,207 @@ person.join(broadcast(graduateProgram), joinExpr).explain()
 When performing joins with small tables, it’s usually best to let Spark decide how to join them. You can always force a broadcast join if you’re noticing strange behavior.
 
 ## Data Sources
+
+#### Read modes
+
+|Read mode|Description|
+| --- | ---|
+|`permissive` |Sets all fields to null when it encounters a corrupted record and places all corrupted records in a string column called _corrupt_record|
+|`dropMalformed` | Drops the row that contains malformed records|
+|`failFast` |Fails immediately upon encountering malformed records|
+
+The default is permissive. `.option("mode", "dropMalformed")`
+
+#### Write API Structure
+The core structure for writing data is as follows:
+ ```scala
+dataFrame.write.format(...).option(...).partitionBy(...).bucketBy(...).sortBy(
+  ...).save()
+```
+
+E.G.:
+ ```scala
+dataframe.write.format("csv")
+  .option("mode", "OVERWRITE")
+  .option("dateFormat", "yyyy-MM-dd")
+  .option("path", "path/to/file(s)")
+  .save()
+```
+#### Save modes
+
+|Save mode | Description|
+| --- | --- |
+|`append` | Appends the output files to the list of files that already exist at that location|
+| `overwrite` | Will completely overwrite any data that already exists there|
+| `errorIfExists` | Throws an error and fails the write if data or files already exist at the specified location |
+| `ignore` | If data or files exist at the location, do nothing with the current DataFrame|
+
+The default is errorIfExists. `.option("mode", "OVERWRITE")`
+
+
+### CSV Files
+#### CSV Options
+|Read/write	|Key	|Potential values	|Default|	Description|
+| --- |            -----------------|------------|---|---|
+|Both |`sep`                        |Any single string character|,|The single character that is used as separator for each field and value.|
+|Both |`header`                     |true, false|false|A Boolean flag that declares whether the first line in the file(s) are the names of the columns.|
+|Read |`escape`                     |Any string character|\|The character Spark should use to escape other characters in the file.|
+|Read |`inferSchema`                |true, false|false|Specifies whether Spark should infer column types when reading the file.|
+|Read |`ignoreLeadingWhiteSpace`    |true, false|false|Declares whether leading spaces from values being read should be skipped.|
+|Read |`ignoreTrailingWhiteSpace`   |true, false|false|Declares whether trailing spaces from values being read should be skipped.|
+|Both |`nullValue`                  |Any string character|“”|Declares what character represents a null value in the file.|
+|Both |`nanValue`                   |Any string character|NaN|Declares what character represents a NaN or missing character in the CSV file.|
+|Both |`positiveInf`                |Any string or character|Inf|Declares what character(s) represent a positive infinite value.|
+|Both |`negativeInf`                |Any string or character|-Inf|Declares what character(s) represent a negative infinite value.|
+|Both |`compression` or codec       |None, uncompressed, bzip2, deflate, gzip, lz4, or snappy|none|Declares what compression codec Spark should use to read or write the file.|
+|Both |`dateFormat`                 |Any string or character that conforms to java’s SimpleDataFormat.|yyyy-MM-dd|Declares the date format for any columns that are date type.|
+|Both |`timestampFormat`            |Any string or character that conforms to java’s SimpleDataFormat.|yyyy-MM-dd’T’HH:mm​:ss.SSSZZ|Declares the timestamp format for any columns that are timestamp type.|
+|Read |`maxColumns`                 |Any integer|20480|Declares the maximum number of columns in the file.|
+|Read |`maxCharsPerColumn`          |Any integer|1000000|Declares the maximum number of characters in a column.|
+|Read |`escapeQuotes`               |true, false|true|Declares whether Spark should escape quotes that are found in lines.|
+|Read |`maxMalformedLogPerPartition`|Any integer|10|Sets the maximum number of malformed rows Spark will log for each partition. Malformed records beyond this number will be ignored.|
+|Write|`quoteAll`                   |true, false|false |Specifies whether all values should be enclosed in quotes, as opposed to just escaping values that have a quote character.|
+|Read |`multiLine`                  |true, false|false|This option allows you to read multiline CSV files where each logical row in the CSV file might span multiple rows in the file itself.|
+
+#### Reading CSV Files
+ ```scala
+spark.read.format("csv")
+```
+Will stop if a record is wrongly parsed or type mismatch
+ ```scala
+import org.apache.spark.sql.types.{StructField, StructType, StringType, LongType}
+val myManualSchema = new StructType(Array(
+  new StructField("DEST_COUNTRY_NAME", StringType, true),
+  new StructField("ORIGIN_COUNTRY_NAME", StringType, true),
+  new StructField("count", LongType, false)
+))
+spark.read.format("csv")
+  .option("header", "true")
+  .option("mode", "FAILFAST")
+  .schema(myManualSchema)
+  .load("/data/flight-data/csv/2010-summary.csv")
+  .show(5)
+```
+#### Writing CSV Files
+
+
+ ```scala
+csvFile.write.format("csv").mode("overwrite").option("sep", "\t")
+  .save("/tmp/my-tsv-file.tsv")
+```
+
+### JSON Files
+
+#### JSON Options
+
+|Read/write	|Key	|Potential values	|Default	|Description|
+| ---| --- |---|---|---|
+|Both|compression or codec|None, uncompressed, bzip2, deflate, gzip, lz4, or snappy|none|Declares what compression codec Spark should use to read or write the file.|
+|Both|dateFormat|Any string or character that conforms to Java’s SimpleDataFormat.|yyyy-MM-dd|Declares the date format for any columns that are date type.|
+|Both|timestampFormat|Any string or character that conforms to Java’s SimpleDataFormat.|yyyy-MM-dd’T’HH:​mm:ss.SSSZZ|Declares the timestamp format for any columns that are timestamp type.|
+|Read|primitiveAsString|true, false|false|Infers all primitive values as string type.|
+|Read|allowComments|true, false|false|Ignores Java/C++ style comment in JSON records.|
+|Read|allowUnquotedFieldNames|true, false|false|Allows unquoted JSON field names.|
+|Read|allowSingleQuotes|true, false|true|Allows single quotes in addition to double quotes.|
+|Read|allowNumericLeadingZeros|true, false|false|Allows leading zeroes in numbers (e.g., 00012).|
+|Read|allowBackslashEscapingAnyCharacter|true, false|false|Allows accepting quoting of all characters using backslash quoting mechanism.|
+|Read|columnNameOfCorruptRecord|Any string|Value of spark.sql.column&NameOfCorruptRecord|Allows renaming the new field having a malformed string created by permissive mode. This will override the configuration value.|
+|Read|multiLine|true, false|false|Allows for reading in non-line-delimited JSON files.|
+
+#### Reading JSON Files
+
+ ```scala
+spark.read.format("json").option("mode", "FAILFAST").schema(myManualSchema)
+  .load("/data/flight-data/json/2010-summary.json").show(5)
+```
+#### Reading JSON Files
+ ```scala
+csvFile.write.format("json").mode("overwrite").save("/tmp/my-json-file.json")
+```
+#### Reading JSON Files
+
+ ```scala
+csvFile.write.format("json").mode("overwrite").save("/tmp/my-json-file.json")
+```
+### Parquet Files
+
+#### Reading Parquet Files
+Parquet has very few options because it enforces its own schema when storing data
+ ```scala
+spark.read.format("parquet")
+  .load("/data/flight-data/parquet/2010-summary.parquet").show(5)
+```
+
+#### Parquet option
+
+|Read/Write	|Key	|Potential Values	|Default	|Description|
+| --- | --- | --- | --- | --- |
+|Write|compression or codec|None, uncompressed, bzip2, deflate, gzip, lz4, or snappy|None|Declares what compression codec Spark should use to read or write the file.|
+|Read|mergeSchema|true, false|Value of the configuration spark.sql.parquet.mergeSchema|You can incrementally add columns to newly written Parquet files in the same table/folder. Use this option to enable or disable this feature.|
+
+
+#### Writing Parquet Files
+ ```scala
+csvFile.write.format("parquet").mode("overwrite")
+  .save("/tmp/my-parquet-file.parquet")
+```
+### ORC Files
+#### Reading Orc Files
+ ```scala
+spark.read.format("orc").load("/data/flight-data/orc/2010-summary.orc").show(5)
+```
+
+#### Writing Orc Files
+ ```scala
+csvFile.write.format("orc").mode("overwrite").save("/tmp/my-json-file.orc")
+```
+
+### SQL Databases
+Pass the driver in spark-shell
+ ```bash
+./bin/spark-shell \
+--driver-class-path postgresql-9.4.1207.jar \
+--jars postgresql-9.4.1207.jar
+```
+|Property Name	|Meaning|
+| --- | --- |
+|url|The JDBC URL to which to connect. The source-specific connection properties can be specified in the URL; for example, jdbc:postgresql://localhost/test?user=fred&password=secret.|
+|dbtable|The JDBC table to read. Note that anything that is valid in a FROM clause of a SQL query can be used. For example, instead of a full table you could also use a subquery in parentheses.|
+|driver|The class name of the JDBC driver to use to connect to this URL.|
+|partitionColumn, lowerBound, upperBound|If any one of these options is specified, then all others must be set as well. In addition, numPartitions must be specified. These properties describe how to partition the table when reading in parallel from multiple workers. partitionColumn must be a numeric column from the table in question. Notice that lowerBound and upperBound are used only to decide the partition stride, not for filtering the rows in the table. Thus, all rows in the table will be partitioned and returned. This option applies only to reading.|
+|numPartitions|The maximum number of partitions that can be used for parallelism in table reading and writing. This also determines the maximum number of concurrent JDBC connections. If the number of partitions to write exceeds this limit, we decrease it to this limit by calling coalesce(numPartitions) before writing.|
+|fetchsize|The JDBC fetch size, which determines how many rows to fetch per round trip. This can help performance on JDBC drivers, which default to low fetch size (e.g., Oracle with 10 rows). This option applies only to reading.|
+|batchsize|The JDBC batch size, which determines how many rows to insert per round trip. This can help performance on JDBC drivers. This option applies only to writing. The default is 1000.|
+|isolationLevel|The transaction isolation level, which applies to current connection. It can be one of NONE, READ_COMMITTED, READ_UNCOMMITTED, REPEATABLE_READ, or SERIALIZABLE, corresponding to standard transaction isolation levels defined by JDBC’s Connection object. The default is READ_UNCOMMITTED. This option applies only to writing. For more information, refer to the documentation in java.sql.Connection.|
+|truncate|This is a JDBC writer-related option. When SaveMode.Overwrite is enabled, Spark truncates an existing table instead of dropping and re-creating it. This can be more efficient, and it prevents the table metadata (e.g., indices) from being removed. However, it will not work in some cases, such as when the new data has a different schema. The default is false. This option applies only to writing.|
+|createTableOptions|This is a JDBC writer-related option. If specified, this option allows setting of database-specific table and partition options when creating a table (e.g., CREATE TABLE t (name string) ENGINE=InnoDB). This option applies only to writing.|
+|createTableColumnTypes|The database column data types to use instead of the defaults, when creating the table. Data type information should be specified in the same format as CREATE TABLE columns syntax (e.g., “name CHAR(64), comments VARCHAR(1024)”). The specified types should be valid Spark SQL data types. This option applies only to writing.|
+
+#### Reading from SQL Databases
+ ```scala
+val driver =  "org.sqlite.JDBC"
+val path = "/data/flight-data/jdbc/my-sqlite.db"
+val url = s"jdbc:sqlite:/${path}"
+val tablename = "flight_info"
+```
+Test connection
+ ```scala
+import java.sql.DriverManager
+val connection = DriverManager.getConnection(url)
+connection.isClosed()
+connection.close()
+```
+Read in SQLite
+ ```scala
+val dbDataFrame = spark.read.format("jdbc").option("url", url)
+  .option("dbtable", tablename).option("driver",  driver).load()
+```
+Read in SQL with password and user
+ ```scala
+val pgDF = spark.read
+  .format("jdbc")
+  .option("driver", "org.postgresql.Driver")
+  .option("url", "jdbc:postgresql://database_server")
+  .option("dbtable", "schema.tablename")
+  .option("user", "username").option("password","my-secret-password").load()
+```
