@@ -1,92 +1,6 @@
 # Spark: The Definitive Guide: Big Data Processing Made Simple
 ###### Matei Zaharia, Bill Chambers
-<!-- TOC -->
 
-- [Spark: The Definitive Guide: Big Data Processing Made Simple](#spark-the-definitive-guide-big-data-processing-made-simple)
-                    - [Matei Zaharia, Bill Chambers](#matei-zaharia-bill-chambers)
-    - [Chp 1](#chp-1)
-    - [Chp 3](#chp-3)
-            - [Data frames and sql](#data-frames-and-sql)
-        - [Chp 3](#chp-3-1)
-    - [Schemas](#schemas)
-    - [Columns](#columns)
-        - [Explicit column references](#explicit-column-references)
-        - [Expressions](#expressions)
-        - [Rows](#rows)
-    - [DataFrame Transformations](#dataframe-transformations)
-        - [Creating DataFrames](#creating-dataframes)
-        - [select and selectExpr](#select-and-selectexpr)
-        - [Literals](#literals)
-        - [Agregar columna](#agregar-columna)
-        - [Renombrar columna](#renombrar-columna)
-        - [Reserved Characters and Keywords](#reserved-characters-and-keywords)
-        - [Case Sensitive](#case-sensitive)
-        - [Quitar columnas](#quitar-columnas)
-        - [Changing a Column’s Type (cast)](#changing-a-columns-type-cast)
-        - [Filtrar columnas](#filtrar-columnas)
-        - [Unique rows](#unique-rows)
-        - [Random Samples](#random-samples)
-        - [Random Splits](#random-splits)
-        - [Concatenating and Appending Rows (Union)](#concatenating-and-appending-rows-union)
-        - [Sorting Rows](#sorting-rows)
-        - [limit](#limit)
-        - [`coalesce` and `repartition`](#coalesce-and-repartition)
-- [¿`coalesce`?](#¿coalesce)
-        - [Collecting Rows to the Driver](#collecting-rows-to-the-driver)
-    - [Chp 6 Working with Different Types of Data](#chp-6-working-with-different-types-of-data)
-        - [API docs links](#api-docs-links)
-            - [DataFrame (Dataset) Methods](#dataframe-dataset-methods)
-            - [Column Methods](#column-methods)
-            - [SQL functions `org.apache.spark.sql.functions`](#sql-functions-orgapachesparksqlfunctions)
-            - [Lit](#lit)
-            - [Booleans](#booleans)
-            - [Numbers columns](#numbers-columns)
-            - [Strings columns](#strings-columns)
-                - [Regular Expressions regex](#regular-expressions-regex)
-            - [Dates and Timestamps](#dates-and-timestamps)
-            - [NULLS](#nulls)
-                    - [Ordering NULLS](#ordering-nulls)
-            - [Complex Types](#complex-types)
-                - [Structs](#structs)
-                - [Arrays](#arrays)
-            - [Grouping with Maps](#grouping-with-maps)
-        - [Window Functions](#window-functions)
-            - [Grouping Metadata](#grouping-metadata)
-        - [Inner Joins](#inner-joins)
-        - [Outer Joins](#outer-joins)
-        - [Left Outer Joins](#left-outer-joins)
-        - [Right Outer Joins](#right-outer-joins)
-        - [Left Semi Joins](#left-semi-joins)
-        - [Left Anti Joins](#left-anti-joins)
-        - [Natural Joins](#natural-joins)
-    - [Data Sources](#data-sources)
-            - [Read modes](#read-modes)
-            - [Write API Structure](#write-api-structure)
-            - [Save modes](#save-modes)
-        - [CSV Files](#csv-files)
-            - [CSV Options](#csv-options)
-            - [Reading CSV Files](#reading-csv-files)
-            - [Writing CSV Files](#writing-csv-files)
-            - [Reading JSON Files](#reading-json-files)
-        - [Parquet Files](#parquet-files)
-            - [Reading Parquet Files](#reading-parquet-files)
-        - [ORC Files](#orc-files)
-            - [Reading Orc Files](#reading-orc-files)
-        - [SQL Databases](#sql-databases)
-                - [Query Pushdown](#query-pushdown)
-                - [Query SQL directly to Database](#query-sql-directly-to-database)
-                - [Reading from databases in parallel](#reading-from-databases-in-parallel)
-                - [Partitioning based on a sliding window](#partitioning-based-on-a-sliding-window)
-            - [Writing to SQL Databases](#writing-to-sql-databases)
-        - [Text Files](#text-files)
-            - [Reading Text Files](#reading-text-files)
-            - [Writing Text Files](#writing-text-files)
-        - [Partitioning](#partitioning)
-        - [Bucketing](#bucketing)
-        - [Complex Types](#complex-types-1)
-        - [Managing File Size](#managing-file-size)
-
-<!-- /TOC -->
 
 
 ## Chp 1
@@ -472,7 +386,7 @@ df.repartition(col("DEST_COUNTRY_NAME"))
 df.repartition(5, col("DEST_COUNTRY_NAME"))
 ```
 
-# ¿`coalesce`?
+### ¿`coalesce`?
 
 
 ### Collecting Rows to the Driver
@@ -2127,95 +2041,181 @@ Only in ORC and Parquet
 ### Managing File Size
 You can use the maxRecordsPerFile option and specify a number of your choosing.
 ```scala
-
+df.write.option("maxRecordsPerFile", 5000)
 ```
 
-```scala
+## Cpt 10 Spark SQL
 
+### The Hive metastore
+
+To connect to the Hive metastore you need to set the Metastore version (spark.sql.hive.metastore.version) to correspond to the proper Hive metastore that you’re accessing. By default, this value is 1.2.1. You also need to set spark.sql.hive.metastore.jars if you’re going to change the way that the HiveMetastoreClient is initialized. Spark uses the default versions, but you can also specify Maven repositories or a classpath in the standard format for the Java Virtual Machine (JVM). In addition, you might need to supply proper class prefixes in order to communicate with different databases that store the Hive metastore. You’ll set these as shared prefixes that both Spark and Hive will share (spark.sql.hive.metastore.sharedPrefixes).
+
+[Docs] http://spark.apache.org/docs/latest/sql-programming-guide.html#interacting-with-different-versions-of-hive-metastore)
+
+### How to Run Spark SQL Queries
+
+#### Spark SQL CLI
+
+```bash
+./bin/spark-sql
+```
+You configure Hive by placing your hive-site.xml, core-site.xml, and hdfs-site.xml files in conf/.
+
+You can completely interoperate between SQL and DataFrames
+```scala
+spark.read.json("/data/flight-data/json/2015-summary.json")
+  .createOrReplaceTempView("some_sql_view") // DF => SQL
+
+spark.sql("""
+SELECT DEST_COUNTRY_NAME, sum(count)
+FROM some_sql_view GROUP BY DEST_COUNTRY_NAME
+""")
+  .where("DEST_COUNTRY_NAME like 'S%'").where("`sum(count)` > 10")
+  .count() // SQL => DF
 ```
 
-```scala
+#### SparkSQL Thrift JDBC/ODBC Server
+This accept remotly connections to spark via JDBC/ODBC
+To start the JDBC/ODBC server, run the following in the Spark directory:
+```bash
+./sbin/start-thriftserver.sh
+```
+By default, the server listens on localhost:10000.
+For environment configuration, use this:
+```bash
+export HIVE_SERVER2_THRIFT_PORT=<listening-port>
+export HIVE_SERVER2_THRIFT_BIND_HOST=<listening-host>
+./sbin/start-thriftserver.sh \
+  --master <master-uri> \
+  ...
+```
+For system properties:
 
+```bash
+./sbin/start-thriftserver.sh \
+  --hiveconf hive.server2.thrift.port=<listening-port> \
+  --hiveconf hive.server2.thrift.bind.host=<listening-host> \
+  --master <master-uri>
+  ...
+```
+You can then test this connection by running the following commands:
+```bash
+./bin/beeline
+beeline> !connect jdbc:hive2://localhost:10000
 ```
 
-```scala
+### Catalog
+The Catalog is an abstraction for the storage of metadata about the data stored in your tables as well as other helpful things like databases, tables, functions, and views. The catalog is available in the `org.apache.spark.sql.catalog.Catalog` package and contains a number of helpful functions for doing things like listing tables, databases, and functions.
 
+### Tables
+
+#### Spark-Managed Tables
+The data within the tables as well as the data about the tables; that is, the metadata. When you use `saveAsTable` on a DataFrame, you are creating a managed table for which Spark will track of all of the relevant information.
+You can set the default Hive warehouse location by setting the `spark.sql.warehouse.dir` configuration to the directory of your choosing when you create your SparkSession. You can also see tables in a specific database by using the query `show tables IN databaseName`, where databaseName represents the name of the database that you want to query.
+
+#### Creating Tables
+```sql
+CREATE TABLE flights (
+  DEST_COUNTRY_NAME STRING, ORIGIN_COUNTRY_NAME STRING, count LONG)
+USING JSON OPTIONS (path '/data/flight-data/json/2015-summary.json')  <--- Fill data within
 ```
+> **USING AND STORED AS**
+> The specification of the USING syntax in the previous example is of significant importance. If you do not specify the format, Spark will default to a Hive SerDe configuration. This has performance implications for future readers and writers because Hive SerDes are much slower than Spark’s native serialization. Hive users can also use the STORED AS syntax to specify that this should be a Hive table.
 
-```scala
+Add comments to tables
 
+```sql
+CREATE TABLE flights_csv (
+  DEST_COUNTRY_NAME STRING,
+  ORIGIN_COUNTRY_NAME STRING COMMENT "remember, the US will be most prevalent",
+  count LONG)
+USING csv OPTIONS (header true, path '/data/flight-data/csv/2015-summary.csv')
 ```
-
-```scala
-
+It is possible to create a table from a query:
+```sql
+CREATE TABLE flights_from_select USING parquet AS SELECT * FROM flights
 ```
-
-```scala
-
+create a table only if it does not currently exist:
+> In this example, we are creating a Hive-compatible table because we did not explicitly specify the format via USING. We can also do the following:
+```sql
+CREATE TABLE IF NOT EXISTS flights_from_select
+  AS SELECT * FROM flights
 ```
-
-```scala
-
+Writing out a partitioned dataset:
+```sql
+CREATE TABLE partitioned_flights USING parquet PARTITIONED BY (DEST_COUNTRY_NAME)
+AS SELECT DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME, count FROM flights LIMIT 5
 ```
+These tables will be available in Spark even through sessions; temporary tables do not currently exist in Spark.
 
-```scala
-
+#### Creating External Tables
+In the example that follows, we create an unmanaged table. Spark will manage the table’s metadata; however, the files are not managed by Spark at all.
+```sql
+CREATE EXTERNAL TABLE hive_flights (
+  DEST_COUNTRY_NAME STRING, ORIGIN_COUNTRY_NAME STRING, count LONG)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LOCATION '/data/flight-data-hive/'
 ```
-
-```scala
-
+create an external table from a select clause:
+```sql
+CREATE EXTERNAL TABLE hive_flights_2
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+LOCATION '/data/flight-data-hive/' AS SELECT * FROM flights
 ```
-
-```scala
-
+#### Inserting into Tables
+```sql
+INSERT INTO flights_from_select
+  SELECT DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME, count FROM flights LIMIT 20
 ```
-
-```scala
-
+You can optionally provide a partition specification if you want to write only into a certain partition. (Por optimized purpose)
+```sql
+INSERT INTO partitioned_flights
+  PARTITION (DEST_COUNTRY_NAME="UNITED STATES")
+  SELECT count, ORIGIN_COUNTRY_NAME FROM flights
+  WHERE DEST_COUNTRY_NAME='UNITED STATES' LIMIT 12
 ```
-
-```scala
-
+#### Describing Table Metadata
+```sql
+DESCRIBE TABLE flights_csv
 ```
-
+You can also see the partitioning scheme for the data by using the following (note, however, that this works only on partitioned tables):
 ```scala
-
+SHOW PARTITIONS partitioned_flights
 ```
-
+#### Refreshing Table Metadata
 ```scala
-
+REFRESH table partitioned_flights
 ```
-
-```scala
-
+REPAIR TABLE refreshes the partitions maintained in the catalog for that given table. This command’s focus is on collecting new partition information — an example might be writing out a new partition manually and the need to repair the table accordingly:
+```sql
+MSCK REPAIR TABLE partitioned_flights
 ```
+#### Dropping Tables
 
-```scala
-
+```sql
+DROP TABLE flights_csv;
+DROP TABLE IF EXISTS flights_csv;
 ```
+>Dropping a table deletes the data in the table, so you need to be very careful when doing this.
 
+#### Dropping unmanaged tables
+If you are dropping an unmanaged table (e.g., hive_flights), no data will be removed but you will no longer be able to refer to this data by the table name.
+
+#### Caching Tables
 ```scala
-
+CACHE TABLE flights
+UNCACHE TABLE FLIGHTS
 ```
+### Views
+view specifies a set of transformations on top of an existing table — **basically just saved query plans**
 
-```scala
+#### Creating Views
+```sql
+CREATE VIEW just_usa_view AS
+  SELECT * FROM flights WHERE dest_country_name = 'United States'
 
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
+-- Only aveilable in the current session
+CREATE TEMP VIEW just_usa_view_temp AS
+  SELECT * FROM flights WHERE dest_country_name = 'United States'   
 ```
 
 ```scala
