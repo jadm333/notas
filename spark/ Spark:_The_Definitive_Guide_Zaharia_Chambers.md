@@ -1,9 +1,9 @@
 # Spark: The Definitive Guide: Big Data Processing Made Simple
-###### Matei Zaharia, Bill Chambers
+**Matei Zaharia, Bill Chambers**
 
 
 
-## Chp 1
+## Intro
 Launching python REPL.
 ```bash
 ./bin/pyspark
@@ -16,8 +16,6 @@ Launching Saprk SQL REPL.
 ```bash
 ./bin/spark-sql
 ```
-
-## Chp 3
 
 ```scala
 // Se crea un data frame distribuido
@@ -91,7 +89,9 @@ sqlWay.explain
 dataFrameWay.explain
 ```
 
-### Chp 3
+## Sparks toolsets
+
+### Spark submit
 
 Para correr un script de spark
 ```bash
@@ -101,7 +101,8 @@ Para correr un script de spark
   ./examples/jars/spark-examples_2.11-2.2.0.jar 10
 ```
 
-## Schemas
+## Api Overview
+### Schemas
 ```scala
 import org.apache.spark.sql.types.{StructField, StructType, StringType, LongType}
 import org.apache.spark.sql.types.Metadata
@@ -117,7 +118,7 @@ val df = spark.read.format("json").schema(myManualSchema)
   .load("/data/flight-data/json/2015-summary.json")
 ```
 
-## Columns
+### Columns
 
 ```scala
 import org.apache.spark.sql.functions.{col, column}
@@ -125,9 +126,11 @@ col("someColumnName")
 column("someColumnName")
 ```
 
-### Explicit column references
+#### Explicit column references
 ```scala
+
 df.col("count")
+// Need to import spark.implicits._ to use $
 $"myColumn"
 'myColumn
 ```
@@ -149,14 +152,14 @@ myRow.getString(0) // String
 myRow.getInt(2) // Int
 ```
 
-## DataFrame Transformations
+### DataFrame Transformations
 
 - We can add rows or columns
 - We can remove rows or columns
 - We can transform a row into a column (or vice versa)
 - We can change the order of rows based on the values in columns
 
-### Creating DataFrames
+#### Creating DataFrames
 
 ```scala
 val df = spark.read.format("json")
@@ -174,7 +177,7 @@ val myRDD = spark.sparkContext.parallelize(myRows)
 val myDf = spark.createDataFrame(myRDD, myManualSchema)
 myDf.show()
 ```
-### select and selectExpr
+#### select and selectExpr
 
 ```scala
 df.select("DEST_COUNTRY_NAME").show(2)
@@ -223,7 +226,7 @@ df.selectExpr(
   .show(2)
 ```
 
-### Literals
+#### Literals
 Son lo mismo:
 ```scala
 import org.apache.spark.sql.functions.lit
@@ -234,7 +237,7 @@ SELECT *, 1 as One FROM flight_data_2015 LIMIT 2
 """).show()
 ```
 
-### Agregar columna
+#### Agregar columna
 
 ```scala
 import org.apache.spark.sql.functions.lit
@@ -250,13 +253,13 @@ df.withColumn("withinCountry", expr("ORIGIN_COUNTRY_NAME == DEST_COUNTRY_NAME"))
   .show(2)
 ```
 
-### Renombrar columna
+#### Renombrar columna
 
 ```scala
 df.withColumnRenamed("DEST_COUNTRY_NAME", "dest").columns
 ```
 
-### Reserved Characters and Keywords
+#### Reserved Characters and Keywords
 ```scala
 import org.apache.spark.sql.functions.expr
 
@@ -265,23 +268,23 @@ val dfWithLongColName = df.withColumn(
   expr("ORIGIN_COUNTRY_NAME"))
 ```
 
-### Case Sensitive
+#### Case Sensitive
 
 ```sql
 set spark.sql.caseSensitive true
 ```
-### Quitar columnas
+#### Quitar columnas
 
 ```scala
 dfWithLongColName.drop("ORIGIN_COUNTRY_NAME", "DEST_COUNTRY_NAME")
 ```
 
-### Changing a Column’s Type (cast)
+#### Changing a Column’s Type (cast)
 
 ```scala
 df.withColumn("count2", col("count").cast("long"))
 ```
-### Filtrar columnas
+#### Filtrar columnas
 
 ```scala
 df.filter(col("count") < 2).show(2)
@@ -302,7 +305,7 @@ WHERE count < 2 AND ORIGIN_COUNTRY_NAME != "Croatia"
 LIMIT 2
 ```
 
-### Unique rows
+#### Unique rows
 
 ```scala
 df.select("ORIGIN_COUNTRY_NAME", "DEST_COUNTRY_NAME").distinct().count()
@@ -311,7 +314,7 @@ df.select("ORIGIN_COUNTRY_NAME", "DEST_COUNTRY_NAME").distinct().count()
 ```sql
 SELECT COUNT(DISTINCT(ORIGIN_COUNTRY_NAME, DEST_COUNTRY_NAME)) FROM dfTable
 ```
-### Random Samples
+#### Random Samples
 
 ```scala
 val seed = 5
@@ -320,7 +323,7 @@ val fraction = 0.5
 df.sample(withReplacement, fraction, seed).count()
 ```
 
-### Random Splits
+#### Random Splits
 
 ```scala
 val seed = 96845
@@ -328,7 +331,7 @@ val dataFrames = df.randomSplit(Array(0.25, 0.75), seed)
 dataFrames(0).count() > dataFrames(1).count() // False
 ```
 
-### Concatenating and Appending Rows (Union)
+#### Concatenating and Appending Rows (Union)
 
 ```scala
 import org.apache.spark.sql.Row
@@ -344,7 +347,7 @@ df.union(newDF)
 
 ```
 
-### Sorting Rows
+#### Sorting Rows
 
 `sort()` = `orderBy()`
 
@@ -362,7 +365,7 @@ df.orderBy(desc("count"), asc("DEST_COUNTRY_NAME")).show(2)
 SELECT * FROM dfTable ORDER BY count DESC, DEST_COUNTRY_NAME ASC LIMIT 2
 ```
 
-### limit
+#### limit
 
 ```scala
 df.limit(5).show()
@@ -372,7 +375,7 @@ df.limit(5).show()
 SELECT * FROM dfTable LIMIT 6
 ```
 
-### `coalesce` and `repartition`
+#### `coalesce` and `repartition`
 
 ```scala
 df.rdd.getNumPartitions // 1
@@ -386,10 +389,10 @@ df.repartition(col("DEST_COUNTRY_NAME"))
 df.repartition(5, col("DEST_COUNTRY_NAME"))
 ```
 
-### ¿`coalesce`?
+#### ¿`coalesce`?
 
 
-### Collecting Rows to the Driver
+#### Collecting Rows to the Driver
 
 ```scala
 val collectDF = df.limit(10)
@@ -402,7 +405,7 @@ collectDF.collect()
 collectDF.toLocalIterator()
 ```
 
-## Chp 6 Working with Different Types of Data
+## Working with Different Types of Data
 
 ### API docs links
 
@@ -427,7 +430,7 @@ df.printSchema()
 df.createOrReplaceTempView("dfTable")
 ```
 
-#### Lit
+### Lit
 
 Se crea una columna literal (i.e. el mismo valor para todos los registros)
 
@@ -439,7 +442,7 @@ df.select(lit(5), lit("five"), lit(5.0))
 SELECT 5, "five", 5.0
 ```
 
-#### Booleans
+### Booleans
 
 ```scala
 import org.apache.spark.sql.functions.col
@@ -491,7 +494,7 @@ WHERE (StockCode = 'DOT' AND
        (UnitPrice > 600 OR instr(Description, "POSTAGE") >= 1))
 ```
 
-#### Numbers columns
+### Numbers columns
 
 ```scala
 import org.apache.spark.sql.functions.{expr, pow}
@@ -559,7 +562,7 @@ import org.apache.spark.sql.functions.monotonically_increasing_id
 df.select(monotonically_increasing_id()).show(2)
 ```
 
-#### Strings columns
+### Strings columns
 
 Capitalize every word in string
 ```scala
@@ -601,7 +604,7 @@ SELECT
   rpad('HELLOOOO  ', 10, ' ')
 FROM dfTable
 ```
-##### Regular Expressions regex
+#### Regular Expressions regex
 
 ```scala
 import org.apache.spark.sql.functions.regexp_replace
@@ -674,7 +677,7 @@ df.select(selectedColumns:_*).where(col("is_white").or(col("is_red")))
   .select("Description").show(3, false)
 ```
 
-#### Dates and Timestamps
+### Dates and Timestamps
 
 ```scala
 import org.apache.spark.sql.functions.{current_date, current_timestamp}
@@ -759,7 +762,7 @@ cleanDateDF.filter(col("date2") > "'2017-12-12'").show()
 > Implicit type casting is an easy way to shoot yourself in the foot, especially when dealing with null values or dates in different timezones or formats. We recommend that you parse them explicitly instead of relying on implicit conversions.
 
 
-#### NULLS
+### NULLS
 
 **`coalesce`**: select the first non-null value from a set of columns
 
@@ -818,15 +821,15 @@ df.na.fill(fillColValues)
 df.na.replace("Description", Map("" -> "UNKNOWN"))
 ```
 
-###### Ordering NULLS
+##### Ordering NULLS
 
 `asc_nulls_first`, `desc_nulls_first`, `asc_nulls_last`, or `desc_nulls_last`
 
-#### Complex Types
+### Complex Types
 
 There are three kinds of complex types: structs, arrays, and maps
 
-##### Structs
+#### Structs
  Structs are Datafrema within DataFrames
  
  ```scala
@@ -852,7 +855,7 @@ complexDF.select("complex.*")
  ```sql
 SELECT complex.* FROM complexDF
 ```
-##### Arrays
+#### Arrays
 
 **`split`**: Split string into Array
 
@@ -931,10 +934,10 @@ LATERAL VIEW explode(splitted) as exploded
 |WHITE HANGING HEA...|   536365| HANGING|
 
 
-##### Maps
+#### Maps
 Maps are created by using the map function and key-value pairs of columns. You then can select them just like you might select from an array, They are the similar as scala `Map` data structure:
 
- ```scala
+```scala
 // in Scala
 import org.apache.spark.sql.functions.map
 df.select(map(col("Description"), col("InvoiceNo")).alias("complex_map")).show(2)
@@ -974,7 +977,7 @@ df.select(map(col("Description"), col("InvoiceNo")).alias("complex_map"))
 | WHITE METAL LANTERN|536365|
 
 
-#### JSON
+### JSON
 
  ```scala
 val jsonDF = spark.range(1).selectExpr("""
@@ -1026,7 +1029,7 @@ df.selectExpr("(InvoiceNo, Description) as myStruct")
 |  [536365,WHITE MET...]|{"InvoiceNo":"536...|
 
 
-#### User-Defined Functions (UDFs)
+### User-Defined Functions (UDFs)
 
 Example, power3
 
@@ -1066,7 +1069,7 @@ After register them
 SELECT power3(12), power3py(12) -- doesn't work because of return type
 ```
 
-## Chp 6 Aggregations
+## Aggregations
 
 - A “group by” allows you to specify one or more keys as well as one or more aggregation functions to transform the value columns.
 - A “window” gives you the ability to specify one or more keys as well as one or more aggregation functions to transform the value columns. However, the rows input to the function are somehow related to the current row.
@@ -1531,6 +1534,7 @@ spark.range(1)
   .select(ba(col("t")), expr("booland(f)"))
   .show()
 ```
+
 ## Joins
 
 ### Joins types
@@ -1545,7 +1549,7 @@ spark.range(1)
 - **Cross (or Cartesian) joins** (match every row in the left dataset with every row in the right dataset)
 
 Data prep for example:
- ```scala
+```scala
 val person = Seq(
     (0, "Bill Chambers", 0, Seq(100)),
     (1, "Matei Zaharia", 1, Seq(500, 250, 100)),
@@ -1648,7 +1652,7 @@ SELECT * FROM graduateProgram LEFT ANTI JOIN person
 
 Natural joins make implicit guesses at the columns on which you would like to join.
 > Implicit is always dangerous! The following query will give us incorrect results because the two DataFrames/tables share a column name (id), but it means different things in the datasets. You should always use this join with caution.
- ```sql
+```sql
 SELECT * FROM graduateProgram NATURAL JOIN person
 ```
 
@@ -1727,7 +1731,7 @@ Spark approaches cluster communication in two different ways during joins. It ei
 **Big table–to–big table**
 In a shuffle join, every node talks to every other node and they share data according to which node has a certain key or set of keys (on which you are joining). These joins are expensive because the network can become congested with traffic, especially if your data is not partitioned well.
 
-** Big table–to–small table**
+**Big table–to–small table**
 When the table is small enough to fit into the memory of a single worker node, with some breathing room of course, we can optimize our join. Although we can use a big table–to–big table communication strategy, it can often be more efficient to use a broadcast join. What this means is that we will replicate our small DataFrame onto every worker node in the cluster (be it located on one machine or many). Now this sounds expensive. However, what this does is prevent us from performing the all-to-all communication during the entire join process. Instead, we perform it only once at the beginning and then let each individual worker node perform the work without having to wait or communicate with any other worker node. At the beginning of this join will be a large communication, just like in the previous type of join. However, immediately after that first, there will be no further communication between nodes. This means that joins will be performed on every single node individually, making CPU the biggest bottleneck.
  ```scala
 val joinExpr = person.col("graduate_program") === graduateProgram.col("id")
@@ -1740,7 +1744,7 @@ import org.apache.spark.sql.functions.broadcast
 val joinExpr = person.col("graduate_program") === graduateProgram.col("id")
 person.join(broadcast(graduateProgram), joinExpr).explain()
 ```
- ```sql
+```sql
  SELECT /*+ MAPJOIN(graduateProgram) */ * FROM person JOIN graduateProgram
   ON person.graduate_program = graduateProgram.id
 ```
@@ -1748,6 +1752,7 @@ person.join(broadcast(graduateProgram), joinExpr).explain()
 
 **Little table–to–little table**
 When performing joins with small tables, it’s usually best to let Spark decide how to join them. You can always force a broadcast join if you’re noticing strange behavior.
+
 
 ## Data Sources
 
@@ -2044,7 +2049,7 @@ You can use the maxRecordsPerFile option and specify a number of your choosing.
 df.write.option("maxRecordsPerFile", 5000)
 ```
 
-## Cpt 10 Spark SQL
+##  Spark SQL
 
 ### The Hive metastore
 
@@ -2205,6 +2210,7 @@ If you are dropping an unmanaged table (e.g., hive_flights), no data will be rem
 CACHE TABLE flights
 UNCACHE TABLE FLIGHTS
 ```
+
 ### Views
 view specifies a set of transformations on top of an existing table — **basically just saved query plans**
 
@@ -2215,71 +2221,219 @@ CREATE VIEW just_usa_view AS
 
 -- Only aveilable in the current session
 CREATE TEMP VIEW just_usa_view_temp AS
-  SELECT * FROM flights WHERE dest_country_name = 'United States'   
+  SELECT * FROM flights WHERE dest_country_name = 'United States'  
+
+-- Or, it can be a global temp view. Global temp views are resolved regardless of database and are viewable across the entire Spark application, but they are removed at the end of the session:
+ CREATE GLOBAL TEMP VIEW just_usa_global_view_temp AS
+  SELECT * FROM flights WHERE dest_country_name = 'United States'
+
+SHOW TABLES
+
+-- Replace
+CREATE OR REPLACE TEMP VIEW just_usa_view_temp AS
+  SELECT * FROM flights WHERE dest_country_name = 'United States'
+
+--Query like another table
+  SELECT * FROM just_usa_view_temp
 ```
 
 ```scala
+val flights = spark.read.format("json")
+  .load("/data/flight-data/json/2015-summary.json")
+val just_usa_df = flights.where("dest_country_name = 'United States'")
+just_usa_df.selectExpr("*").explain
+```
+Is the same like
 
+```sql
+EXPLAIN SELECT * FROM just_usa_view --NOT just_usa_view from above
+--equivalently
+EXPLAIN SELECT * FROM flights WHERE dest_country_name = 'United States'
 ```
 
-```scala
+#### Dropping Views
+```sql
+DROP VIEW IF EXISTS just_usa_view;
+```
+### Databases
+If you not define one, Spark will use the default one. All SQL statments execute within the context of a dabase
+See databases
+```sql
+SHOW DATABASES
 
+CREATE DATABASE some_db
+
+USE some_db
+
+SHOW tables
+
+SELECT * FROM flights -- fails with table/view not found
+
+SELECT * FROM default.flights
+
+SELECT current_database()
+
+USE default;
+
+DROP DATABASE IF EXISTS some_db;
 ```
 
-```scala
+### Select Statements
+```sql
+SELECT [ALL|DISTINCT] named_expression[, named_expression, ...]
+    FROM relation[, relation, ...]
+    [lateral_view[, lateral_view, ...]]
+    [WHERE boolean_expression]
+    [aggregation [HAVING boolean_expression]]
+    [ORDER BY sort_expressions]
+    [CLUSTER BY expressions]
+    [DISTRIBUTE BY expressions]
+    [SORT BY sort_expressions]
+    [WINDOW named_window[, WINDOW named_window, ...]]
+    [LIMIT num_rows]
 
+named_expression:
+    : expression [AS alias]
+
+relation:
+    | join_relation
+    | (table_name|query|relation) [sample] [AS alias]
+    : VALUES (expressions)[, (expressions), ...]
+          [AS (column_name[, column_name, ...])]
+
+expressions:
+    : expression[, expression, ...]
+
+sort_expressions:
+    : expression [ASC|DESC][, expression [ASC|DESC], ...]
+```
+#### case…when…then Statements
+
+```sql
+SELECT
+  CASE WHEN DEST_COUNTRY_NAME = 'UNITED STATES' THEN 1
+       WHEN DEST_COUNTRY_NAME = 'Egypt' THEN 0
+       ELSE -1 END
+FROM partitioned_flights
+```
+### Advanced Topics
+
+#### Complex Types
+
+##### Structs
+
+```sql
+CREATE VIEW IF NOT EXISTS nested_data AS
+  SELECT (DEST_COUNTRY_NAME, ORIGIN_COUNTRY_NAME) as country, count FROM flights
+
+SELECT * FROM nested_data
+SELECT country.DEST_COUNTRY_NAME, count FROM nested_data
+
+SELECT country.*, count FROM nested_data
+```
+##### Lists
+
+
+```sql
+-- You can also use the function collect_set, which creates an array without duplicate values. These are both aggregation functions and therefore can be specified only in aggregations:
+SELECT DEST_COUNTRY_NAME as new_name, collect_list(count) as flight_counts,
+  collect_set(ORIGIN_COUNTRY_NAME) as origin_set
+FROM flights GROUP BY DEST_COUNTRY_NAME
+
+-- create an array manually within a column
+SELECT DEST_COUNTRY_NAME, ARRAY(1, 2, 3) FROM flights
+
+-- lists by position by using a Python-like array query syntax
+SELECT DEST_COUNTRY_NAME as new_name, collect_list(count)[0]
+FROM flights GROUP BY DEST_COUNTRY_NAME
+
+-- convert an array back into rows.
+CREATE OR REPLACE TEMP VIEW flights_agg AS
+  SELECT DEST_COUNTRY_NAME, collect_list(count) as collected_counts
+  FROM flights GROUP BY DEST_COUNTRY_NAME
+
+-- Opposite
+SELECT explode(collected_counts), DEST_COUNTRY_NAME FROM flights_agg
+```
+##### Functions
+
+```sql
+SHOW FUNCTIONS
+SHOW SYSTEM FUNCTIONS
+
+SHOW USER FUNCTIONS
+
+SHOW FUNCTIONS "s*"; --functions that starts with
+```
+###### User-defined functions
+```scala
+def power3(number:Double):Double = number * number * number
+spark.udf.register("power3", power3(_:Double):Double)
 ```
 
-```scala
+```sql
+SELECT count, power3(count) FROM flights
+```
+You can also register functions through the Hive CREATE TEMPORARY FUNCTION syntax.
 
+#### Subqueries
+
+##### Uncorrelated predicate subqueries
+```sql
+SELECT dest_country_name FROM flights
+GROUP BY dest_country_name ORDER BY sum(count) DESC LIMIT 5
 ```
 
-```scala
+|dest_country_name|
+|-----------------|
+|    United States|
+|           Canada|
+|           Mexico|
+|   United Kingdom|
+|            Japan|
 
+
+```sql
+SELECT * FROM flights
+WHERE origin_country_name IN (SELECT dest_country_name FROM flights
+      GROUP BY dest_country_name ORDER BY sum(count) DESC LIMIT 5)
 ```
+This query is uncorrelated because it does not include any information from the outer scope of the query. It’s a query that you can run on its own.
 
-```scala
+##### Correlated predicate subqueries
 
+```sql
+SELECT * FROM flights f1
+WHERE EXISTS (SELECT 1 FROM flights f2
+            WHERE f1.dest_country_name = f2.origin_country_name)
+AND EXISTS (SELECT 1 FROM flights f2
+            WHERE f2.dest_country_name = f1.origin_country_name)
 ```
+`EXISTS` just checks for some existence in the subquery and returns true if there is a value. You can flip this by placing the NOT operator in front of it.
 
-```scala
+##### Uncorrelated scalar queries
 
+```sql
+SELECT *, (SELECT max(count) FROM flights) AS maximum FROM flights
 ```
+### Miscellaneous Features
 
-```scala
+#### Configurations
 
-```
+|Property Name|	Default	|Meaning|
+|---|---|---|
+|`spark.sql.inMemoryColumnarStorage.compressed` |true |When set to true, Spark SQL automatically selects a compression codec for each column based on statistics of the data.|
+|`spark.sql.inMemoryColumnarStorage.batchSize` |10000 |Controls the size of batches for columnar caching. Larger batch sizes can improve memory utilization and compression, but risk OutOfMemoryErrors (OOMs) when caching data.|
+|`spark.sql.files.maxPartitionBytes` |134217728 (128 MB) |The maximum number of bytes to pack into a single partition when reading files.|
+|`spark.sql.files.openCostInBytes` |4194304 (4 MB) |The estimated cost to open a file, measured by the number of bytes that could be scanned in the same time. This is used when putting multiple files into a partition. It is better to overestimate; that way the partitions with small files will be faster than partitions with bigger files (which is scheduled first).|
+|`spark.sql.broadcastTimeout` |300 |Timeout in seconds for the broadcast wait time in broadcast joins.|
+|`spark.sql.autoBroadcastJoinThreshold` |10485760 (10 MB) |Configures the maximum size in bytes for a table that will be broadcast to all worker nodes when performing a join. You can disable broadcasting by setting this value to -1. Note that currently statistics are supported only for Hive Metastore tables for which the command ANALYZE TABLE COMPUTE STATISTICS noscan has been run.|
+|`spark.sql.shuffle.partitions` |200 |Configures the number of partitions to use when shuffling data for joins or aggregations.|
 
-```scala
+#### Setting Configuration Values in SQL
 
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
+```sql
+SET spark.sql.shuffle.partitions=20
 ```
 
 ```scala
