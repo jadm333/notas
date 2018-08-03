@@ -2436,171 +2436,112 @@ SELECT *, (SELECT max(count) FROM flights) AS maximum FROM flights
 SET spark.sql.shuffle.partitions=20
 ```
 
-```scala
+## Datasets
 
+DataFrames are Datasets of type Row. Datasets are a strictly Java Virtual Machine (JVM) language feature that work only with Scala and Java.
+
+### Whe to use Datasets
+
+- When the operation(s) you would like to perform cannot be expressed using DataFrame manipulations.
+- When you want or need type-safety, and you’re willing to accept the cost of performance to achieve it
+
+### Creating Datasets
+
+#### In Java: Encoders
+
+```java
+import org.apache.spark.sql.Encoders;
+
+public class Flight implements Serializable{
+  String DEST_COUNTRY_NAME;
+  String ORIGIN_COUNTRY_NAME;
+  Long DEST_COUNTRY_NAME;
+}
+
+Dataset<Flight> flights = spark.read
+  .parquet("/data/flight-data/parquet/2010-summary.parquet/")
+  .as(Encoders.bean(Flight.class));
 ```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
+#### In Scala: Case Classes
 
 ```scala
+case class Flight(DEST_COUNTRY_NAME: String,
+                  ORIGIN_COUNTRY_NAME: String, count: BigInt)
 
+val flightsDF = spark.read
+  .parquet("/data/flight-data/parquet/2010-summary.parquet/")
+val flights = flightsDF.as[Flight]
 ```
+### Transformations
+#### Filtering
+
+> By specifying a function, we are forcing Spark to evaluate this function on every row in our Dataset. This can be very resource intensive.
+```scala
+def originIsDestination(flight_row: Flight): Boolean = {
+  return flight_row.ORIGIN_COUNTRY_NAME == flight_row.DEST_COUNTRY_NAME
+}
+
+flights.filter(flight_row => originIsDestination(flight_row)).first()
+```
+Result:
+```
+Flight = Flight(United States,United States,348113)
+```
+#### Mapping
+```scala
+val destinations = flights.map(f => f.DEST_COUNTRY_NAME)
+```
+
+### Joins
+```scala
+case class FlightMetadata(count: BigInt, randomData: BigInt)
+
+val flightsMeta = spark.range(500).map(x => (x, scala.util.Random.nextLong))
+  .withColumnRenamed("_1", "count").withColumnRenamed("_2", "randomData")
+  .as[FlightMetadata]
+val flights2 = flights
+  .joinWith(flightsMeta, flights.col("count") === flightsMeta.col("count"))
+
+flights2.selectExpr("_1.DEST_COUNTRY_NAME")
+```
+
+### Grouping and Aggregations
+
+Return DataFrames instead of Datasets (you lose type information):
+```scala
+flights.groupBy("DEST_COUNTRY_NAME").count()
+```
+Alternative:
+The `groupByKey` method allows you to group by a specific key in the Dataset and get a typed Dataset in return. This function, however, doesn’t accept a specific column name but rather a function. This makes it possible for you to specify more sophisticated grouping functions that are much more akin to something like this:
+```scala
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).count()
+```
+After we perform a grouping with a key on a Dataset, we can operate on the Key Value Dataset with functions that will manipulate the groupings as raw objects:
+```scala
+def grpSum(countryName:String, values: Iterator[Flight]) = {
+  values.dropWhile(_.count < 5).map(x => (countryName, x))
+}
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).flatMapGroups(grpSum).show(5)
+```
+|      _1|                  _2|
+|--------|--------------------|
+|Anguilla|[Anguilla,United ...|
+|Paraguay|[Paraguay,United ...|
+|  Russia|[Russia,United St...|
+| Senegal|[Senegal,United S...|
+|  Sweden|[Sweden,United St...|
+
 
 ```scala
+def grpSum2(f:Flight):Integer = {
+  1
+}
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).mapValues(grpSum2).count().take(5)
+
+def sum2(left:Flight, right:Flight) = {
+  Flight(left.DEST_COUNTRY_NAME, null, left.count + right.count)
+}
+flights.groupByKey(x => x.DEST_COUNTRY_NAME).reduceGroups((l, r) => sum2(l, r))
+  .take(5)
 
 ```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
-```scala
-
-```
-
