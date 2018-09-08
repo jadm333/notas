@@ -180,3 +180,91 @@ While not as big of a concern as they used to be, it’s still important to redu
 
 
 
+# `docker-compose.yml`
+
+## `version`
+Always put '3',
+
+## `services`
+
+Services is the first root key of the Compose YAML and is the configuration
+of the container that needs to be created.
+
+### `build`
+
+The build key contains the configuration options that are applied at build
+time. The build key can be a path to the build context or a detailed object
+consisting of the context and optional Dockerfile location.
+
+#### `context`
+The context key sets the context of the build. If the context is a relative
+path, then the path is considered relative to the compose file location.
+
+
+
+#### `image`
+If the image tag is supplied along with the build option, Docker will build the
+image and name and tag the image with the supplied image name and tag.
+
+### `environment`/`env_file`
+he environment key sets the environment variables for the application,
+while env_file provides the path to the environment file, which is read for
+setting the environment variables. Both environment as well as env_file can
+accept a single file or multiple files as an array.
+
+### `depends_on`
+This key is used to set the dependency requirements across various
+services. It's used for running order
+
+### `image`
+This key specifies the name of the image to be used when a container is
+brought up. If the image doesn’t exist locally, Docker will attempt to pull
+it if the build key is not present. If the build key is present in the Compose
+file, Docker will attempt to build and tag the image.
+
+### `ports`
+This key specifies the ports that will be exposed to the port. While
+providing this key, we can specify either port—the Docker host port to
+which the container port will be exposed or just the container port, in
+which case a random, ephemeral port number on the host is selected.
+
+
+### `volumes`
+Volumes is available as a top-level key as well as suboption available to a
+service. When volumes is referred to as a top-level key, it lets us provide
+the named volumes that will be used for services at the bottom.
+
+```yaml
+version: '3'
+services:
+    app:
+        build:
+        	context: ./app
+        	Dockerfile: dockerfile-app
+        	image: <tag>:<image_name>
+        	env_file: .env
+        depends_on:
+        	- database
+        	- webserver
+    database:
+    	image: mysql
+    	ports:
+    		- "3306"
+    	environment:
+    		PATH: /home
+    		API_KEY: thisisnotavalidkey
+    	volumes:
+    		- "./dbdata:/var/lib/mysql"
+
+    webserver:
+    	image: nginx
+    	ports:
+    		- "8080:80"
+    	env_file:
+    		- common.env
+    		- app.env
+    		- secrets.env
+```
+
+
+
