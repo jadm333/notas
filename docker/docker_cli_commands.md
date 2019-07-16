@@ -1,3 +1,9 @@
+## Tag image
+```bash
+docker image tag <image_name> YOUR_DOCKER_ID/<image_name>
+```
+
+
 ## Start a new container:
 -d daemon
 ```bash
