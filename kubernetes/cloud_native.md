@@ -19,3 +19,22 @@ If there are multiple pods matching the criteria, a pod will be selected automat
 ```bash
 port-forward TYPE/NAME [options] [LOCAL_PORT:]REMOTE_PORT [...[LOCAL_PORT_N:]REMOTE_PORT_N]
 ```
+
+## Querying Deployments
+
+### Info
+```bash
+kubectl get deployments
+```
+### Verbose info
+```bash
+kubectl describe deployments/<name>
+```
+
+
+### Querying Cluster
+
+```bash
+kubectl get nodes
+```
+
