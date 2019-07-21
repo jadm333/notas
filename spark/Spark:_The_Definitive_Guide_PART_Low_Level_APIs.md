@@ -196,7 +196,75 @@ spark.sparkContext.parallelize(Seq("Hello", "World"), 2).glom().collect()
 // Array(Array(Hello), Array(World))
 ```
 
+```python
+spark.sparkContext.parallelize(["Hello", "World"], 2).glom().collect()
+# [['Hello'], ['World']]
+```
+
+## Advanced RDDs
+Prev:
 ```scala
+val myCollection = "Spark The Definitive Guide : Big Data Processing Made Simple"
+  .split(" ")
+val words = spark.sparkContext.parallelize(myCollection, 2)
+```
+
+```python
+myCollection = "Spark The Definitive Guide : Big Data Processing Made Simple"\
+  .split(" ")
+words = spark.sparkContext.parallelize(myCollection, 2)
+```
+
+### Key-Value Basics (Key-Value RDDs)
+simplest way to generate key-value:
+
+```scala
+words.map(word => (word.toLowerCase, 1))
+```
+
+```python
+words.map(lambda word: (word.lower(), 1))
+```
+
+#### keyBy
+Create key by a function
+
+```scala
+val keyword = words.keyBy(word => word.toLowerCase.toSeq(0).toString)
+```
+
+```python
+keyword = words.keyBy(lambda word: word.lower()[0])
+```
+#### Mapping over Values
+
+```scala
+keyword.mapValues(word => word.toUpperCase).collect()
+keyword.flatMapValues(word => word.toUpperCase).collect()
+```
+
+```python
+keyword.mapValues(lambda word: word.upper()).collect()
+keyword.flatMapValues(lambda word: word.upper()).collect()
+```
+
+#### Extracting Keys and Values
+
+```scala
+keyword.keys.collect()
+keyword.values.collect()
+```
+
+```python
+keyword.keys().collect()
+keyword.values().collect()
+```
+
+```scala
+
+```
+
+```python
 
 ```
 
@@ -204,7 +272,7 @@ spark.sparkContext.parallelize(Seq("Hello", "World"), 2).glom().collect()
 
 ```
 
-```scala
+```python
 
 ```
 
@@ -212,3 +280,46 @@ spark.sparkContext.parallelize(Seq("Hello", "World"), 2).glom().collect()
 
 ```
 
+```python
+
+```
+
+```scala
+
+```
+
+```python
+
+```
+
+```scala
+
+```
+
+```python
+
+```
+
+```scala
+
+```
+
+```python
+
+```
+
+```scala
+
+```
+
+```python
+
+```
+
+```scala
+
+```
+
+```python
+
+```
